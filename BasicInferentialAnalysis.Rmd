@@ -1,0 +1,73 @@
+---
+title: "Basic Inferential Data Analysis"
+author: "Kenneth Fajardo"
+date: "4/29/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Overview
+We will be working on the ToothGrowth dataset, which is the result of a study by E. W. Crampton in 1947, The Effect of Vitamin C on Tooth Growth in Guinea Pigs. Quoting from the R documentation:
+
+> "The response is the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods, orange juice or ascorbic acid (a form of vitamin C and coded as VC)."
+
+## Load the ToothGrowth data and perform some basic exploratory data analyses
+Load the needed libraries and then load the ToothGrowth data.
+```{r init}
+library(datasets)
+library(ggplot2)
+# load the data
+data(ToothGrowth) 
+```
+
+From the figure below, we can see that there is a $15-25\%$ decrease in length for dosages of 0.5 and 1.0. However, this is not a basis for rejecting the null hypothesis $H_0$, which suggest that Vitamin C has no effect on tooth growth $(H_0: \mu = 0)$.
+```{r plot}
+g <- ggplot(ToothGrowth, aes(x=dose, y=len, fill=supp))
+g + geom_col(position = "fill") + xlab("Dose") + ylab("Value in Percent") + 
+    labs(title = "The Effect of Vitamin C on Tooth Growth in Guinea Pigs") + 
+    geom_hline(yintercept = 0.5, color="black")
+```
+
+## Provide a basic summary of the data.
+```{r summary}
+str(ToothGrowth)
+```
+
+## Use confidence intervals and/or hypothesis tests to compare tooth growth by *supp* and *dose*.
+We propose an alternative hypothesis that Vitamin C has an effect to tooth growth $(H_\alpha: \mu \ne 0)$. Since the sample size is not too large, we use a t-distribution for generating the confidence intervals. For convenience, we use the *t.test* function in R. 
+
+We will be testing the hypothesis according to *supp* and *dose*. The tests are divided into the following:
+
+### (1) general (regardless of dosage), 
+```{r confidence_gen}
+t.test(len ~ supp, data = ToothGrowth)$conf
+```
+```{r group_dose}
+dose0.5 <- ToothGrowth[ToothGrowth$dose==0.5,]
+dose1.0 <- ToothGrowth[ToothGrowth$dose==1.0,]
+dose2.0 <- ToothGrowth[ToothGrowth$dose==2.0,]
+```
+
+Note that the tests are not paired since the subjects are not measured twice.
+
+### (2) $pair_{dose} = (0.5, 1.0)$ 
+```{r confidence1}
+t.test(dose0.5$len, dose1.0$len, paired = FALSE)$conf
+```
+
+### (3) $pair_{dose} = (0.5, 2.0)$
+```{r confidence2}
+t.test(dose0.5$len, dose2.0$len, paired = FALSE)$conf
+```
+
+### (4) $pair_{dose} = (1.0, 2.0)$
+```{r confidence3}
+t.test(dose1.0$len, dose2.0$len, paired = FALSE)$conf
+```
+
+## Conclusions and supporting assumptions
+Based from the confidence intervals, for the first case where we test regardless of dosage, we do not reject $H_0$ since the interval contains 0. However, when testing the ordered pair of dosages, we get negative values in the confidence interval. This implies that **the lower the dosage, the shorter the length of the teeth are**. Conversely, higher dosages yield to higher tooth growth.
+
+NOTE: This is true only if the experiment is fair i.e. the subjects are *independently and identically distributed*, as mentioned in the documentation of the dataset.
